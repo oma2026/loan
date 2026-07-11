@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>車輛雙融資現金流與出售試算 V4</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;background:#f5f7fb;margin:0;color:#1f2937}
+  .wrap{max-width:1180px;margin:28px auto;padding:0 16px}
+  h1{margin-bottom:6px}
+  .sub{color:#6b7280;margin-bottom:22px}
+  .legend{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:18px;font-size:14px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:18px;height:18px;border-radius:4px;border:1px solid #cbd5e1;display:inline-block}
+  .dot.input{background:#fff3a6}
+  .dot.locked{background:#e5e7eb}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+  .card{background:#fff;border-radius:14px;padding:18px;box-shadow:0 3px 14px rgba(0,0,0,.06)}
+  h3{margin-top:0}
+  label{display:block;font-size:13px;color:#4b5563;margin:10px 0 5px}
+  input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:16px}
+  input.user-input{background:#fff3a6;border-color:#eab308}
+  input.locked{background:#e5e7eb;color:#374151;border-color:#cbd5e1}
+  button{margin-top:18px;width:100%;padding:13px;border:0;border-radius:9px;background:#111827;color:#fff;font-size:16px;cursor:pointer}
+  .results{margin-top:22px}
+  .metric{font-size:25px;font-weight:700;margin-top:6px}
+  .positive{color:#047857}.negative{color:#b91c1c}.neutral{color:#111827}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .note{font-size:13px;color:#6b7280;line-height:1.65;margin-top:16px}
+  .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>車輛雙融資現金流與出售試算 V4</h1>
+  <div class="sub">黃色欄位由使用者輸入；灰色欄位由系統自動計算並鎖定。</div>
+
+  <div class="legend">
+    <span><i class="dot input"></i> 黃色：可輸入</span>
+    <span><i class="dot locked"></i> 灰色：系統自動計算</span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="badge">車輛基本資料</div>
+      <label>車價（元）</label><input id="price" class="user-input" type="number" value="3800000">
+      <label>共用年利率（%）</label><input id="commonRate" class="user-input" type="number" step="0.01" value="5">
+      <label>共用期數（月）</label><input id="commonMonths" class="user-input" type="number" value="48">
+      <label>出售價格（元）</label><input id="sale" class="user-input" type="number" value="2000000">
+      <label>出售成本／稅費（元）</label><input id="saleCost" class="user-input" type="number" value="0">
+    </div>
+
+    <div class="card">
+      <div class="badge">融資 A：銀行貸款</div>
+      <label>貸款金額（元）</label><input id="loanA" class="user-input" type="number" value="2300000">
+      <label>年利率（自動帶入）</label><input id="rateAView" class="locked" type="text" readonly>
+      <label>期數（自動帶入）</label><input id="monthsAView" class="locked" type="text" readonly>
+      <label>還款方式</label><input class="locked" type="text" value="本息平均攤還" readonly>
+    </div>
+
+    <div class="card">
+      <div class="badge">融資 B：延後頭款</div>
+      <label>延後頭款本金（車價－融資 A）</label><input id="loanB" class="locked" type="text" readonly>
+      <label>年利率（自動帶入）</label><input id="rateBView" class="locked" type="text" readonly>
+      <label>每月支付方式</label><input class="locked" type="text" value="每月只付利息，賣車時還本金" readonly>
+      <label>計息期間</label><input class="locked" type="text" value="持有至出售為止" readonly>
+    </div>
+
+    <div class="card">
+      <div class="badge">每月營運</div>
+      <label>每月收入（元）</label><input id="revenue" class="user-input" type="number" value="160000">
+      <label>司機費用（收入 %）</label><input id="driverPct" class="user-input" type="number" step="0.1" value="30">
+      <label>油資（收入 %）</label><input id="fuelPct" class="user-input" type="number" step="0.1" value="16">
+      <label>保養雜支（收入 %）</label><input id="maintPct" class="user-input" type="number" step="0.1" value="4">
+      <label>保險／月（元）</label><input id="insurance" class="user-input" type="number" value="8000">
+      <label>牌照燃料稅／月（元）</label><input id="tax" class="user-input" type="number" value="1200">
+      <label>其他每月營運費用（元）</label><input id="otherMonthlyCost" class="user-input" type="number" value="0">
+      <button onclick="calc()">重新計算</button>
+    </div>
+  </div>
+
+  <div class="results grid">
+    <div class="card"><div>銀行貸款月付</div><div id="mPmtA" class="metric neutral"></div></div>
+    <div class="card"><div>延後頭款每月利息</div><div id="mPmtB" class="metric neutral"></div></div>
+    <div class="card"><div>每月總融資支出</div><div id="mFinance" class="metric neutral"></div></div>
+    <div class="card"><div>每月營運成本（不含融資）</div><div id="mOp" class="metric neutral"></div></div>
+    <div class="card"><div>每月淨現金流</div><div id="mNet" class="metric"></div></div>
+    <div class="card"><div>持有期間累積現金流</div><div id="opTotal" class="metric"></div></div>
+    <div class="card"><div>出售後淨回收</div><div id="saleNet" class="metric"></div></div>
+    <div class="card"><div>最終總現金結果</div><div id="finalNet" class="metric"></div></div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>試算摘要</h3>
+    <table><tbody id="summary"></tbody></table>
+    <div class="note">
+      融資 B 本金固定等於「車價－融資 A 貸款金額」。融資 A 與融資 B 共用同一個年利率。
+      融資 A 依共用期數本息平均攤還；融資 B 每月只付利息，直到出售當月，再用出售款償還融資 B 本金。
+      「其他每月營運費用」可用來填寫停車費、洗車費、管理費、通行費或其他固定支出。
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = n => new Intl.NumberFormat('zh-TW',{maximumFractionDigits:0}).format(n) + ' 元';
+const val = id => Number(document.getElementById(id).value)||0;
+
+function amortizedPayment(p, annualRate, n){
+  const r = annualRate/12;
+  if(n<=0) return 0;
+  return r===0 ? p/n : p*r/(1-Math.pow(1+r,-n));
+}
+function setMetric(id,n){
+  const el=document.getElementById(id);
+  el.textContent=fmt(n);
+  el.className='metric '+(n>0?'positive':n<0?'negative':'neutral');
+}
+function calc(){
+  const price=val('price');
+  const loanA=val('loanA');
+  const loanB=Math.max(price-loanA,0);
+  const annualRate=val('commonRate')/100;
+  const months=val('commonMonths');
+
+  document.getElementById('loanB').value=fmt(loanB);
+  document.getElementById('rateAView').value=(annualRate*100).toFixed(2)+'%';
+  document.getElementById('rateBView').value=(annualRate*100).toFixed(2)+'%';
+  document.getElementById('monthsAView').value=months+' 期';
+
+  const pmtA=amortizedPayment(loanA,annualRate,months);
+  const pmtB=loanB*annualRate/12;
+  const totalInterestA=pmtA*months-loanA;
+  const totalInterestB=pmtB*months;
+
+  const revenue=val('revenue');
+  const driver=revenue*val('driverPct')/100;
+  const fuel=revenue*val('fuelPct')/100;
+  const maint=revenue*val('maintPct')/100;
+  const insurance=val('insurance');
+  const tax=val('tax');
+  const other=val('otherMonthlyCost');
+  const op=driver+fuel+maint+insurance+tax+other;
+  const finance=pmtA+pmtB;
+  const monthlyNet=revenue-op-finance;
+  const opTotal=monthlyNet*months;
+
+  const saleNet=val('sale')-val('saleCost')-loanB;
+  const finalNet=opTotal+saleNet;
+
+  setMetric('mPmtA',pmtA);
+  setMetric('mPmtB',pmtB);
+  setMetric('mFinance',finance);
+  setMetric('mOp',op);
+  setMetric('mNet',monthlyNet);
+  setMetric('opTotal',opTotal);
+  setMetric('saleNet',saleNet);
+  setMetric('finalNet',finalNet);
+
+  const rows=[
+    ['車價',price],
+    ['融資 A 本金',loanA],
+    ['融資 B 本金',loanB],
+    ['共用年利率',annualRate*100],
+    ['共用期數（月）',months],
+    ['每月收入',revenue],
+    ['司機費用',driver],
+    ['油資',fuel],
+    ['保養雜支',maint],
+    ['保險',insurance],
+    ['牌照燃料稅',tax],
+    ['其他每月營運費用',other],
+    ['銀行貸款月付',pmtA],
+    ['延後頭款每月利息',pmtB],
+    ['每月淨現金流',monthlyNet],
+    ['銀行貸款總利息',totalInterestA],
+    ['延後頭款總利息',totalInterestB],
+    ['出售時償還融資 B 本金',loanB],
+    ['持有期間累積現金流',opTotal],
+    ['出售後淨回收',saleNet],
+    ['最終總現金結果',finalNet]
+  ];
+  document.getElementById('summary').innerHTML=rows.map(([k,v])=>{
+    if(k==='共用年利率') return `<tr><td>${k}</td><td>${Number(v).toFixed(2)}%</td></tr>`;
+    if(k==='共用期數（月）') return `<tr><td>${k}</td><td>${v} 個月</td></tr>`;
+    return `<tr><td>${k}</td><td>${fmt(v)}</td></tr>`;
+  }).join('');
+}
+
+document.querySelectorAll('.user-input').forEach(el=>el.addEventListener('input',calc));
+calc();
+</script>
+</body>
+</html>
