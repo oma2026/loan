@@ -102,7 +102,7 @@
       融資 B 本金固定等於「車價－融資 A 貸款金額」。融資 A 與融資 B 共用同一個年利率。
       融資 A 依共用期數本息平均攤還；融資 B 每月只付利息，直到出售當月，再用出售款償還融資 B 本金。
       「其他每月營運費用」可用來填寫停車費、洗車費、管理費、通行費或其他固定支出。
-      司機費用依「每月收入」分四級（≤15萬／15萬–18萬／18萬–22萬／&gt;22萬），各級百分比可自行輸入；門檻值歸入較低那一級。
+      司機費用採「累進級距」計算：只有超出門檻的部分，才適用較高那一級的百分比（例：每月收入 160,000，其中 150,000 用第一級 %、超出的 10,000 用第二級 %）。四個級距（≤15萬／15萬–18萬／18萬–22萬／&gt;22萬）的百分比皆可自行輸入。
     </div>
   </div>
 </div>
@@ -139,13 +139,13 @@ function calc(){
   const totalInterestB=pmtB*months;
 
   const revenue=val('revenue');
-  // 依「每月收入」決定司機費用適用的等級（門檻值歸入較低那一級）
-  let driverPct, driverTier;
-  if(revenue<=150000){ driverPct=val('driverPct1'); driverTier='≤15萬'; }
-  else if(revenue<=180000){ driverPct=val('driverPct2'); driverTier='15萬–18萬'; }
-  else if(revenue<=220000){ driverPct=val('driverPct3'); driverTier='18萬–22萬'; }
-  else { driverPct=val('driverPct4'); driverTier='>22萬'; }
-  const driver=revenue*driverPct/100;
+  // 司機費用採「累進級距」：只有超出門檻的部分，才適用較高那一級的百分比
+  const p1=val('driverPct1'), p2=val('driverPct2'), p3=val('driverPct3'), p4=val('driverPct4');
+  const band1=Math.min(revenue,150000);                    // 首 15 萬（含）
+  const band2=Math.max(0,Math.min(revenue,180000)-150000); // 15萬–18萬 這一段
+  const band3=Math.max(0,Math.min(revenue,220000)-180000); // 18萬–22萬 這一段
+  const band4=Math.max(0,revenue-220000);                  // 超過 22 萬 的部分
+  const driver=band1*p1/100 + band2*p2/100 + band3*p3/100 + band4*p4/100;
   const fuel=revenue*val('fuelPct')/100;
   const maint=revenue*val('maintPct')/100;
   const insurance=val('insurance');
@@ -168,6 +168,11 @@ function calc(){
   setMetric('saleNet',saleNet);
   setMetric('finalNet',finalNet);
 
+  // 司機費用的分段明細（只列出金額大於 0 的級距）
+  const driverRows=[['司機費用（累進級距合計）',driver]];
+  [['≤15萬',band1,p1],['15萬–18萬',band2,p2],['18萬–22萬',band3,p3],['>22萬',band4,p4]]
+    .forEach(([name,amt,pct])=>{ if(amt>0) driverRows.push(['　• '+name+' 段 × '+pct+'%',amt*pct/100]); });
+
   const rows=[
     ['車價',price],
     ['融資 A 本金',loanA],
@@ -175,7 +180,7 @@ function calc(){
     ['共用年利率',annualRate*100],
     ['共用期數（月）',months],
     ['每月收入',revenue],
-    ['司機費用（適用 '+driverTier+' ／ '+driverPct+'%）',driver],
+    ...driverRows,
     ['油資',fuel],
     ['保養雜支',maint],
     ['保險',insurance],
