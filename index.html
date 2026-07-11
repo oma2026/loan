@@ -89,7 +89,6 @@
     <div class="card"><div>延後頭款每月利息</div><div id="mPmtB" class="metric neutral"></div></div>
     <div class="card"><div>每月總融資支出</div><div id="mFinance" class="metric neutral"></div></div>
     <div class="card"><div>每月營運成本（不含融資）</div><div id="mOp" class="metric neutral"></div></div>
-    <div class="card"><div>司機總收入（費用＋每月收入一半）</div><div id="driverTotal" class="metric neutral"></div></div>
     <div class="card"><div>每月淨現金流</div><div id="mNet" class="metric"></div></div>
     <div class="card"><div>持有期間累積現金流</div><div id="opTotal" class="metric"></div></div>
     <div class="card"><div>出售後淨回收</div><div id="saleNet" class="metric"></div></div>
@@ -104,7 +103,6 @@
       融資 A 依共用期數本息平均攤還；融資 B 每月只付利息，直到出售當月，再用出售款償還融資 B 本金。
       「其他每月營運費用」可用來填寫停車費、洗車費、管理費、通行費或其他固定支出。
       司機費用依「每月收入」分四級（≤15萬／15萬–18萬／18萬–22萬／&gt;22萬），各級百分比可自行輸入；門檻值歸入較低那一級。
-      「司機總收入」＝司機費用＋每月收入的一半，為司機實得金額，僅供參考、不影響上方公司的現金流數字。
     </div>
   </div>
 </div>
@@ -148,8 +146,6 @@ function calc(){
   else if(revenue<=220000){ driverPct=val('driverPct3'); driverTier='18萬–22萬'; }
   else { driverPct=val('driverPct4'); driverTier='>22萬'; }
   const driver=revenue*driverPct/100;
-  const driverShare=revenue*0.5;          // 每月收入的一半，分給司機
-  const driverTotal=driver+driverShare;   // 司機總收入（僅顯示，不影響公司現金流）
   const fuel=revenue*val('fuelPct')/100;
   const maint=revenue*val('maintPct')/100;
   const insurance=val('insurance');
@@ -167,7 +163,6 @@ function calc(){
   setMetric('mPmtB',pmtB);
   setMetric('mFinance',finance);
   setMetric('mOp',op);
-  setMetric('driverTotal',driverTotal);
   setMetric('mNet',monthlyNet);
   setMetric('opTotal',opTotal);
   setMetric('saleNet',saleNet);
@@ -181,8 +176,6 @@ function calc(){
     ['共用期數（月）',months],
     ['每月收入',revenue],
     ['司機費用（適用 '+driverTier+' ／ '+driverPct+'%）',driver],
-    ['司機分潤（每月收入 ½）',driverShare],
-    ['司機總收入',driverTotal],
     ['油資',fuel],
     ['保養雜支',maint],
     ['保險',insurance],
